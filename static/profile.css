@@ -1,0 +1,80 @@
+/* General Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: url("bank.jpg") no-repeat center/cover;
+  min-height: 100vh;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navbar */
+.navbar {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar nav button {
+  margin-left: 10px;
+  background: #ffd700;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Profile Page Container */
+.profile-page {
+  max-width: 500px;
+  margin: 80px auto;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.profile-page h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #004080;
+  font-size: 28px;
+}
+
+/* Profile Information */
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.profile-info p {
+  font-size: 16px;
+  color: #333;
+}
+
+.profile-info p strong {
+  color: #004080;
+}
+
+/* Responsive */
+@media screen and (max-width: 600px) {
+  .profile-page {
+    margin: 60px 20px;
+    padding: 25px;
+  }
+
+  .profile-page h2 {
+    font-size: 24px;
+  }
+}

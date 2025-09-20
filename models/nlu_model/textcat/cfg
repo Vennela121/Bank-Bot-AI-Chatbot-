@@ -1,0 +1,12 @@
+{
+  "labels":[
+    "transfer_money",
+    "check_balance",
+    "mini_statement",
+    "card_details",
+    "greeting",
+    "account_info"
+  ],
+  "threshold":0.0,
+  "positive_label":null
+}

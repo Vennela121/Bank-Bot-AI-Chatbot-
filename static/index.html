@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bank Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="logo">🏦 MyBank</div>
+    <nav>
+      <button id="loginBtn">Login</button>
+      <button id="registerBtn">Register</button>
+      <button onclick="location.href='profile.html'">Profile</button>
+    </nav>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>Welcome to MyBank Portal</h1>
+    <p>Secure, Reliable & Smart Banking with AI Assistance</p>
+  </section>
+
+  <!-- Info Cards (Bottom) -->
+  <section class="info-cards">
+    <div class="card">
+      <h3>💳 Easy Banking</h3>
+      <p>Manage your accounts, cards, and transactions seamlessly.</p>
+    </div>
+    <div class="card">
+      <h3>🔒 Secure Transactions</h3>
+      <p>Your security is our top priority with advanced encryption.</p>
+    </div>
+    <div class="card">
+      <h3>Click here for more info</h3>
+      <p>More queries? Visit our nearby branch.</p>
+    </div>
+  </section>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Login</h2>
+      <form>
+        <input type="text" placeholder="User ID" required>
+        <input type="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div id="registerModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Register</h2>
+      <form>
+        <input type="text" placeholder="Full Name" required>
+        <input type="email" placeholder="Email" required>
+        <input type="text" placeholder="Account Number" required>
+        <input type="password" placeholder="Password" required>
+        <button type="submit">Register</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Chatbot -->
+  <div class="chatbot-container" id="chatbot">
+    <div class="chatbot-header">
+      <span>💬 Bank Bot</span>
+      <div class="chatbot-controls">
+        <button id="fullscreen-btn">⛶</button>
+        <button id="toggle-btn">_</button>
+      </div>
+    </div>
+    <div class="chatbot-body">
+      <div class="chat-messages">
+        <p><strong>Bot:</strong> Hello! I am your Bank Assistant. Choose a query below:</p>
+      </div>
+      <div class="chat-input">
+        <input type="text" id="user-input" placeholder="Type a message...">
+        <button id="send-btn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
