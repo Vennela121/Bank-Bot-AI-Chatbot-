@@ -66,6 +66,32 @@ userInput?.addEventListener("keypress", e => {
 
 async function callChatAPI(message) {
     try {
+        // Check if user is logged in
+        const user = JSON.parse(localStorage.getItem("user"));
+        let botReply = "";
+        let intent = "unknown";
+
+        // Example basic intent handling for demo
+        if (!user) {
+            botReply = "⚠️ Please login to check your balance.";
+            intent = message.toLowerCase().includes("balance") ? "check_balance" : "unknown";
+        } else {
+            // If logged in, you can call backend API or handle dummy responses
+            if (message.toLowerCase().includes("balance")) {
+                botReply = `Your current balance is ₹${parseFloat(user.balance).toFixed(2)}`;
+                intent = "check_balance";
+            } else if (message.toLowerCase().includes("account")) {
+                botReply = `Your account number is ${user.account}`;
+                intent = "account_info";
+            } else {
+                botReply = "Sorry, I didn’t understand that.";
+            }
+        }
+
+        addMessage("Bot", `${botReply}<br><span style="color:green;"> ✔ ${intent} </span>`);
+
+        // Optional: call backend if you have real API
+        /*
         const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -76,11 +102,13 @@ async function callChatAPI(message) {
         const botReply = data.response || "Sorry, I didn’t understand that.";
         const intent = data.intent || "unknown";
         addMessage("Bot", `${botReply}<br><span style="color:green;"> ✔ ${intent} </span>`);
+        */
     } catch (err) {
         console.error("Chat API error:", err);
         addMessage("Bot", "⚠️ Server error. Is the backend running?");
     }
 }
+
 
 // ---------------------- LOGIN FORM ----------------------
 const loginForm = document.getElementById("loginForm");
