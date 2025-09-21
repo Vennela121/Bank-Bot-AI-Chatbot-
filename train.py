@@ -1,103 +1,107 @@
-# train_nlu.py
-import random
-import spacy
-from spacy.util import minibatch, compounding
-from spacy.training import Example
+import csv
 import os
+import spacy
+from spacy.training import Example
+from spacy.util import minibatch, compounding
 
-# Define labels (intents)
-LABELS = [
-    "transfer_money",
-    "check_balance",
-    "mini_statement",
-    "card_details",
-    "greeting",
-    "account_info"
-]
+# --- Paths ---
+APP_ROOT = os.path.dirname(__file__)
+CSV_PATH = os.path.join(APP_ROOT, "banking_queries.csv")
+MODEL_PATH = os.path.join(APP_ROOT, "models", "nlu_model")
 
-# Training dataset
-TRAIN_DATA = [
-    # --- check_balance ---
-    ("What's my account balance?", {"cats": {"check_balance": 1.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Show balance", {"cats": {"check_balance": 1.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("How much money do I have?", {"cats": {"check_balance": 1.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Tell me my balance", {"cats": {"check_balance": 1.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Current balance please", {"cats": {"check_balance": 1.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
+# --- Helper function to get intents from CSV ---
+def get_intents_from_csv():
+    intents = set()
+    try:
+        with open(CSV_PATH, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if 'intent' in row and row['intent']:
+                    intents.add(row['intent'])
+    except FileNotFoundError:
+        print(f"Error: {CSV_PATH} not found.")
+        return None
+    return list(intents)
 
-    # --- transfer_money ---
-    ("Please transfer ₹500 to account 4532", {"cats": {"transfer_money": 1.0, "check_balance": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Send 200 rupees to 9876", {"cats": {"transfer_money": 1.0, "check_balance": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Move 1000 from my savings to checking", {"cats": {"transfer_money": 1.0, "check_balance": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Transfer five hundred to account number 6543", {"cats": {"transfer_money": 1.0, "check_balance": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Send ₹2500 to my friend’s account 1122", {"cats": {"transfer_money": 1.0, "check_balance": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("I want to transfer $500 from my savings account to checking account 4532", {"cats": {"transfer_money": 1.0, "check_balance": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
+# --- Training function ---
+def train():
+    if not os.path.exists(CSV_PATH):
+        print(f"Error: The file '{CSV_PATH}' was not found. Please ensure it's in the correct directory.")
+        return
 
-    # --- mini_statement ---
-    ("Give me mini statement", {"cats": {"mini_statement": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Last three transactions", {"cats": {"mini_statement": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Show my recent activity", {"cats": {"mini_statement": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("What are my last 5 debits?", {"cats": {"mini_statement": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Show me my latest transactions", {"cats": {"mini_statement": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "card_details": 0.0, "greeting": 0.0, "account_info": 0.0}}),
+    # Check for required columns
+    with open(CSV_PATH, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        if 'text' not in reader.fieldnames or 'intent' not in reader.fieldnames:
+            print("Error: The CSV file must contain 'text' and 'intent' columns.")
+            return
 
-    # --- card_details ---
-    ("Card details", {"cats": {"card_details": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("What’s my card number?", {"cats": {"card_details": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Tell me my card info", {"cats": {"card_details": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("I lost my debit card", {"cats": {"card_details": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "greeting": 0.0, "account_info": 0.0}}),
-    ("Show me last four digits of my card", {"cats": {"card_details": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "greeting": 0.0, "account_info": 0.0}}),
+    # Load data from CSV
+    TRAIN_DATA = []
+    try:
+        with open(CSV_PATH, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                text = row['text']
+                intent = row['intent']
+                if text and intent:
+                    cats = {i: 0.0 for i in get_intents_from_csv()}
+                    cats[intent] = 1.0
+                    TRAIN_DATA.append((text, {"cats": cats}))
+    except Exception as e:
+        print(f"Error reading CSV file: {e}")
+        return
 
-    # --- greeting ---
-    ("Hey", {"cats": {"greeting": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "account_info": 0.0}}),
-    ("Hello", {"cats": {"greeting": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "account_info": 0.0}}),
-    ("Hi bot", {"cats": {"greeting": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "account_info": 0.0}}),
-    ("Good morning", {"cats": {"greeting": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "account_info": 0.0}}),
-    ("Yo!", {"cats": {"greeting": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "account_info": 0.0}}),
+    if not TRAIN_DATA:
+        print("No training data found in the CSV. Please check the file.")
+        return
 
-    # --- account_info ---
-    ("What is my account number", {"cats": {"account_info": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0}}),
-    ("Tell me my account details", {"cats": {"account_info": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0}}),
-    ("Show account info", {"cats": {"account_info": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0}}),
-    ("What’s my account ID?", {"cats": {"account_info": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0}}),
-    ("Account number please", {"cats": {"account_info": 1.0, "check_balance": 0.0, "transfer_money": 0.0, "mini_statement": 0.0, "card_details": 0.0, "greeting": 0.0}}),
-]
+    print("Building and training NLU model...")
 
-def train(output_dir="models/nlu_model", n_iter=20):
-    """Train a spaCy NLU model for intent classification."""
-
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
+    # Build the model
     nlp = spacy.blank("en")
+    nlp.add_pipe("textcat_multilabel", last=True)
+    textcat = nlp.get_pipe("textcat_multilabel")
 
-    if "textcat" not in nlp.pipe_names:
-        textcat = nlp.add_pipe("textcat", last=True)
-    else:
-        textcat = nlp.get_pipe("textcat")
+    # Add labels
+    for text, annotations in TRAIN_DATA:
+        for cat in annotations["cats"]:
+            textcat.add_label(cat)
 
-    for label in LABELS:
-        textcat.add_label(label)
+    # Convert to spaCy's training format
+    examples = [Example.from_dict(nlp.make_doc(text), annotations) for text, annotations in TRAIN_DATA]
 
+    # Start training
     optimizer = nlp.begin_training()
-    print("Training the intent classifier...")
-
-    for epoch in range(n_iter):
-        random.shuffle(TRAIN_DATA)
+    for i in range(20):
         losses = {}
-        batches = minibatch(TRAIN_DATA, size=compounding(4.0, 32.0, 1.5))
-
+        batches = minibatch(examples, size=compounding(4.0, 32.0, 1.001))
         for batch in batches:
-            examples = []
-            for text, annotations in batch:
-                doc = nlp.make_doc(text)
-                example = Example.from_dict(doc, annotations)
-                examples.append(example)
+            nlp.update(batch, drop=0.2, losses=losses)
 
-            nlp.update(examples, sgd=optimizer, drop=0.2, losses=losses)
+        print(f"Epoch {i+1} - Losses: {losses}")
+    
+    # Save the trained model
+    nlp.to_disk(MODEL_PATH)
+    print("\nTraining complete.")
+    print(f"Model saved to: {MODEL_PATH}")
 
-        print(f"Epoch {epoch+1}/{n_iter} - Losses: {losses}")
-
-    nlp.to_disk(output_dir)
-    print(f"Saved trained model to: {output_dir}")
+    # Test the model with some examples from the training data
+    print("\nTesting the trained model...")
+    test_texts = [
+        "What is my balance?",
+        "I need to transfer money.",
+        "How can I apply for a loan?",
+        "Hello",
+        "bye",
+        "..."
+    ]
+    for test_text in test_texts:
+        doc = nlp(test_text)
+        print(f"Text: {test_text}")
+        print(f"Predicted Intent: {doc.cats}")
+        print("-" * 20)
 
 if __name__ == "__main__":
     train()
+

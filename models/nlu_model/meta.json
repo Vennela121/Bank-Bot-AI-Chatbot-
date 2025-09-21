@@ -17,20 +17,36 @@
     "mode":"default"
   },
   "labels":{
-    "textcat":[
-      "transfer_money",
-      "check_balance",
+    "textcat_multilabel":[
       "mini_statement",
-      "card_details",
+      "unknown",
+      " can you help me?",
+      " I'd like to apply for a business loan",
+      "create_account",
+      "check_history",
       "greeting",
-      "account_info"
+      "goodbye",
+      "card_details",
+      "greeting_hi",
+      "apply_card",
+      "get_interest_rate",
+      "account_info",
+      "close_account",
+      "transfer_money",
+      "get_branch_details",
+      " I'm done",
+      " I have a question about my account",
+      "check_balance",
+      "apply_loan",
+      "lost_card",
+      "greeting_bye"
     ]
   },
   "pipeline":[
-    "textcat"
+    "textcat_multilabel"
   ],
   "components":[
-    "textcat"
+    "textcat_multilabel"
   ],
   "disabled":[
 

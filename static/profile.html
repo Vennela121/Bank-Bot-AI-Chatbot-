@@ -11,17 +11,20 @@
     <div class="logo">🏦 MyBank</div>
     <nav>
       <button onclick="location.href='index.html'">Home</button>
+      <button id="logoutBtn" style="display: none;">Logout</button>
     </nav>
   </header>
 
   <section class="profile-page">
     <h2>Your Profile</h2>
     <div class="profile-info">
-      <p><strong>ID:</strong> 123456</p>
-      <p><strong>Name:</strong> John Doe</p>
-      <p><strong>Account:</strong> 9876543210</p>
-      <p><strong>Card:</strong> **** **** **** 1234</p>
-      <p><strong>Balance:</strong> ₹50,000</p>
+      <h2>Welcome, <span id="userName">Guest</span></h2>
+      <p>Email: <span id="userEmail">Not available</span></p>
+      <p>Account No: <span id="userAccount">---</span></p>
+      <p>Balance: ₹<span id="userBalance">0</span></p>
+
+      <button id="historyBtn">📜 Account History</button>
+      <div id="historySection"></div>
     </div>
   </section>
   <script src="script.js"></script>

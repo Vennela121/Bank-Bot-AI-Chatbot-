@@ -9,13 +9,15 @@
 <body>
 
   <!-- Navbar -->
-  <header class="navbar">
+    <header class="navbar">
     <div class="logo">🏦 MyBank</div>
     <nav>
-      <button id="loginBtn">Login</button>
-      <button id="registerBtn">Register</button>
-      <button onclick="location.href='profile.html'">Profile</button>
+        <button id="loginBtn">Login</button>
+        <button id="registerBtn">Register</button>
+        <button id="logoutBtn" style="display: none;">Logout</button>
+        <button onclick="location.href='profile.html'">Profile</button>
     </nav>
+</header>
   </header>
 
   <!-- Hero Section -->
@@ -45,11 +47,12 @@
     <div class="modal-content">
       <span class="close">&times;</span>
       <h2>Login</h2>
-      <form>
-        <input type="text" placeholder="User ID" required>
-        <input type="password" placeholder="Password" required>
-        <button type="submit">Login</button>
+      <form id="loginForm">
+       <input type="email" name="email" placeholder="Email" required>
+       <input type="password" name="password" placeholder="Password" required>
+       <button type="submit">Login</button>
       </form>
+
     </div>
   </div>
 
@@ -58,13 +61,14 @@
     <div class="modal-content">
       <span class="close">&times;</span>
       <h2>Register</h2>
-      <form>
-        <input type="text" placeholder="Full Name" required>
-        <input type="email" placeholder="Email" required>
-        <input type="text" placeholder="Account Number" required>
-        <input type="password" placeholder="Password" required>
-        <button type="submit">Register</button>
+      <form id="registerForm">
+       <input type="text" name="name" placeholder="Full Name" required>
+       <input type="email" name="email" placeholder="Email" required>
+       <input type="text" name="account" placeholder="Account Number" required>
+       <input type="password" name="password" placeholder="Password" required>
+       <button type="submit">Register</button>
       </form>
+
     </div>
   </div>
 

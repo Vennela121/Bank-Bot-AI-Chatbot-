@@ -16,12 +16,12 @@ app = Flask(__name__, static_folder="static", static_url_path="")
 app.secret_key = "replace-with-a-random-secret-key"
 
 # --- Load spaCy NLU model ---
-if os.path.exists(MODEL_PATH):
+try:
     nlp = spacy.load(MODEL_PATH)
     print("Loaded NLU model from", MODEL_PATH)
-else:
+except OSError:
     nlp = None
-    print("NLU model not found. Run train_nlu.py first.")
+    print("NLU model not found. Please run train.py first.")
 
 # --- Database setup ---
 def init_db():
@@ -73,7 +73,7 @@ def extract_entities(text):
     text_lower = text.lower()
 
     # Amount extraction
-    m = re.search(r'(?:₹|\bINR\b|\bRs\b|\$)?\s?([0-9][0-9,]\.?[0-9])', text.replace(',', ''))
+    m = re.search(r'(?:₹|\bINR\b|\bRs\b|\$)?\s?([0-9][0-9,.]*?)', text.replace(',', ''))
     if m:
         try:
             ent['amount'] = float(m.group(1))
@@ -84,12 +84,6 @@ def extract_entities(text):
     m2 = re.search(r'\b(\d{4,18})\b', text)
     if m2:
         ent['account_number'] = m2.group(1)
-
-    # Account types
-    if "saving" in text_lower or "savings" in text_lower:
-        ent['from_account'] = "savings"
-    if "checking" in text_lower or "current" in text_lower:
-        ent['to_account'] = "checking"
 
     return ent
 
@@ -107,16 +101,16 @@ def recognize_intent(message: str):
     score = intent_scores.get(intent, 0.0)
     entities = extract_entities(message)
 
+    # Confidence threshold
+    if score < 0.6:  # Adjust this value as needed
+        intent = "unknown"
+
     return intent, score, entities
 
 # --- Routes to serve frontend pages ---
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
-
-@app.route("/profile.html")
-def profile_page():
-    return app.send_static_file("profile.html")
 
 # --- Authentication: Register & Login ---
 @app.route("/api/register", methods=["POST"])
@@ -155,7 +149,7 @@ def register():
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json() or {}
-    identifier = data.get("email") or data.get("account_number") or data.get("id")
+    identifier = data.get("email") or data.get("account_number")
     password = data.get("password")
 
     if not (identifier and password):
@@ -251,24 +245,15 @@ def perform_transfer(from_user_id, to_account_number, amount):
 
     return {"success": True, "reply": f"Transferred ₹{amount:.2f} to account {to_account_number}."}
 
-@app.route("/api/mini_statement", methods=["GET"])
-def mini_statement():
-    uid = session.get("user_id")
-    if not uid:
-        return jsonify({"success": False, "message": "Login required."}), 401
-
-    rows = query_db(
-        "SELECT type, amount, description, timestamp FROM transactions WHERE user_id=? ORDER BY id DESC LIMIT 5",
-        (uid,)
-    )
-    items = [{"type": r[0], "amount": r[1], "desc": r[2], "ts": r[3]} for r in rows]
-    return jsonify({"success": True, "transactions": items})
-
 # --- Chat endpoint (now uses recognize_intent helper) ---
 @app.route("/api/chat", methods=["POST"])
 def chat():
     data = request.get_json() or {}
     message = data.get("message", "")
+
+    # Convert message to lowercase for consistent NLU processing
+    message = message.lower()
+
     uid = session.get("user_id")
 
     # --- Recognize intent ---
@@ -280,29 +265,32 @@ def chat():
 
     # --- Dialogue Management ---
     if intent == "greeting":
-        response = "Hello! 👋 How can I help you today?"
+        response = "Hello there! How can I help you today?"
+
+    elif intent == "goodbye":
+        response = "It was nice assisting you. Have a great day!"
 
     elif intent == "check_balance":
         if not logged_in:
             response = "⚠️ Please login to check your balance."
-            session["pending_intent"] = "check_balance"
         else:
-            response = "✅ Your current balance is ₹50,000.00."
+            row = query_db("SELECT balance FROM users WHERE id=?", (uid,), one=True)
+            balance = row[0] if row else 0
+            response = f"✅ Your current balance is ₹{balance:.2f}."
 
     elif intent == "transfer_money":
         if not logged_in:
             response = "⚠️ Please login first to transfer money."
-            session["pending_intent"] = "transfer_money"
         else:
             account = entities.get("account_number")
             amount = entities.get("amount")
-
-            if not amount:
+            
+            if not amount and not account:
+                 response = "How much do you want to transfer, and to which account?"
+            elif not amount:
                 response = "How much do you want to transfer?"
-                session["awaiting"] = "amount"
             elif not account:
                 response = "Please provide the account number."
-                session["awaiting"] = "account"
             else:
                 result = perform_transfer(uid, account, amount)
                 response = result["reply"]
@@ -311,22 +299,57 @@ def chat():
         if not logged_in:
             response = "⚠️ Please login to view account information."
         else:
-            response = "Your account number is 123456789 (Savings)."
+            row = query_db("SELECT account_number FROM users WHERE id=?", (uid,), one=True)
+            account_num = row[0] if row else 'N/A'
+            response = f"Your account number is {account_num}."
 
     elif intent == "mini_statement":
         if not logged_in:
-            response = "⚠️ Please login to get mini statement."
+            response = "⚠️ Please login to get a mini statement."
         else:
-            response = "📃 Mini statement: -₹500 ATM, +₹2000 Salary, -₹700 Shopping."
+            rows = query_db(
+                "SELECT type, amount, description, timestamp FROM transactions WHERE user_id=? ORDER BY id DESC LIMIT 5",
+                (uid,)
+            )
+            if not rows:
+                response = "You have no transactions yet."
+            else:
+                statement = "📃 Mini statement:<br>"
+                for r in rows:
+                    type_str = "Debit" if r[0] == "debit" else "Credit"
+                    statement += f"{type_str} of ₹{r[1]:.2f} for {r[2]} on {datetime.fromisoformat(r[3]).strftime('%Y-%m-%d')}<br>"
+                response = statement
 
     elif intent == "card_details":
         if not logged_in:
             response = "⚠️ Please login to check card details."
         else:
-            response = "💳 You have a Visa Credit Card ending with 4321."
+            row = query_db("SELECT card_last4 FROM users WHERE id=?", (uid,), one=True)
+            card_last4 = row[0] if row else 'N/A'
+            response = f"💳 You have a card ending with {card_last4}."
 
+    elif intent == "lost_card":
+        response = "I'm sorry to hear that. To block your card, please call our 24/7 helpline at 1800-123-4567 or visit our nearest branch."
+
+    elif intent == "apply_loan":
+        response = "We offer a variety of loans including personal, home, and student loans. Please visit our website or a branch to discuss your options with a loan officer."
+
+    elif intent == "get_interest_rate":
+        response = "Interest rates vary based on the loan type and current market conditions. Please contact a loan advisor for a personalized quote."
+
+    elif intent == "get_branch_details":
+        response = "You can find your nearest branch by using our branch locator tool on the website. Please provide your city or zip code for the best results."
+
+    elif intent == "create_account":
+        response = "You can open a new account online in minutes! Click the 'Register' button on the homepage or visit a branch with your ID and address proof."
+
+    elif intent == "close_account":
+        response = "To close an account, you must visit a branch and submit a formal request. Please bring your ID and account documents."
+
+    elif intent == "unknown":
+        response = "Sorry, I didn't understand that. Could you please rephrase?"
     else:
-        response = "Sorry, I didn’t understand that. Could you rephrase?"
+        response = "Sorry, I didn’t understand that. Could you please rephrase?"
 
     return jsonify({
         "intent": intent,
