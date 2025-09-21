@@ -158,10 +158,11 @@ def login():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    if "@" in identifier:  # login with email
-        c.execute("SELECT id, password, name, account_number, balance, card_last4 FROM users WHERE email=?", (identifier,))
-    else:  # login with account number
-        c.execute("SELECT id, password, name, account_number, balance, card_last4 FROM users WHERE account_number=?", (identifier,))
+    # Get the row from the database, INCLUDING THE 'email' COLUMN
+    if "@" in identifier:
+        c.execute("SELECT id, password, name, email, account_number, balance, card_last4 FROM users WHERE email=?", (identifier,))
+    else:
+        c.execute("SELECT id, password, name, email, account_number, balance, card_last4 FROM users WHERE account_number=?", (identifier,))
 
     row = c.fetchone()
     conn.close()
@@ -170,16 +171,16 @@ def login():
         user = {
             "id": row[0],
             "name": row[2],
-            "account_number": row[3],
-            "balance": row[4],
-            "card_last4": row[5]
+            "email": row[3],            # <-- The email is now at index 3
+            "account_number": row[4],   # <-- This index has shifted to 4
+            "balance": row[5],          # <-- This index has shifted to 5
+            "card_last4": row[6]        # <-- This index has shifted to 6
         }
         session["user_id"] = user["id"]
         session["logged_in"] = True
         return jsonify({"success": True, "user": user})
 
     return jsonify({"success": False, "message": "Invalid credentials."}), 401
-
 @app.route("/api/logout", methods=["POST"])
 def logout():
     session.pop("user_id", None)

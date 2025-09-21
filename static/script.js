@@ -54,7 +54,7 @@ sendBtn?.addEventListener("click", async () => {
     if (!message) return;
     addMessage("You", message);
     userInput.value = "";
-    await callChatAPI(message);
+    await handleChatMessage(message);
 });
 
 userInput?.addEventListener("keypress", e => {
@@ -63,99 +63,100 @@ userInput?.addEventListener("keypress", e => {
         sendBtn.click();
     }
 });
-
-async function callChatAPI(message) {
+//Chatbot logic
+async function handleChatMessage(message) {
     try {
-        // Check if user is logged in
-        const user = JSON.parse(localStorage.getItem("user"));
-        let botReply = "";
-        let intent = "unknown";
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ message: message })
+        });
 
-        // Example basic intent handling for demo
-        if (!user) {
-            botReply = "⚠️ Please login to check your balance.";
-            intent = message.toLowerCase().includes("balance") ? "check_balance" : "unknown";
-        } else {
-            // If logged in, you can call backend API or handle dummy responses
-            if (message.toLowerCase().includes("balance")) {
-                botReply = `Your current balance is ₹${parseFloat(user.balance).toFixed(2)}`;
-                intent = "check_balance";
-            } else if (message.toLowerCase().includes("account")) {
-                botReply = `Your account number is ${user.account}`;
-                intent = "account_info";
-            } else {
-                botReply = "Sorry, I didn’t understand that.";
-            }
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        addMessage("Bot", `${botReply}<br><span style="color:green;"> ✔ ${intent} </span>`);
+        const data = await response.json();
+        const botReply = data.response;
+        const intent = data.intent;
 
-        // Optional: call backend if you have real API
-        /*
-        const res = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message }),
-            credentials: "include"
-        });
-        const data = await res.json();
-        const botReply = data.response || "Sorry, I didn’t understand that.";
-        const intent = data.intent || "unknown";
-        addMessage("Bot", `${botReply}<br><span style="color:green;"> ✔ ${intent} </span>`);
-        */
+        addMessage("Bot", `${botReply}<br><span style="color:green;">✔ ${intent}</span>`);
+
     } catch (err) {
-        console.error("Chat API error:", err);
-        addMessage("Bot", "⚠️ Server error. Is the backend running?");
+        console.error("Chatbot error:", err);
+        addMessage("Bot", "⚠️ Server error. Please try again later.");
     }
 }
-
-
 // ---------------------- LOGIN FORM ----------------------
+// ---------------------- LOGIN FORM (UPDATED) ----------------------
 const loginForm = document.getElementById("loginForm");
-loginForm?.addEventListener("submit", (e) => {
+loginForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
+
     const formData = new FormData(loginForm);
     const email = formData.get("email");
     const password = formData.get("password");
 
-    const users = JSON.parse(localStorage.getItem("registeredUsers")) || [];
-    const user = users.find(u => u.email === email && u.password === password);
+    try {
+        const response = await fetch("/api/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email: email, password: password })
+        });
 
-    if (!user) {
-        alert("❌ Invalid email or password!");
-        return;
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            // Store user data in localStorage only after successful backend login
+            localStorage.setItem("user", JSON.stringify(data.user)); 
+            alert("✅ Login successful!");
+            window.location.href = "profile.html";
+        } else {
+            alert(`❌ Login failed: ${data.message || 'Invalid credentials'}`);
+        }
+
+    } catch (err) {
+        console.error("Login error:", err);
+        alert("⚠️ An error occurred. Please try again.");
     }
-
-    localStorage.setItem("user", JSON.stringify(user));
-    alert("✅ Login successful!");
-    window.location.href = "profile.html";
 });
-
 // ---------------------- REGISTER FORM ----------------------
+// ---------------------- REGISTER FORM (CORRECTED) ----------------------
 const registerForm = document.getElementById("registerForm");
-registerForm?.addEventListener("submit", (e) => {
+registerForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(registerForm);
-    const name = formData.get("name");
-    const email = formData.get("email");
-    const account = formData.get("account");
-    const password = formData.get("password");
+    const data = Object.fromEntries(formData.entries());
+    
+    // Use the correct key for account number from your HTML
+    data.account_number = data.account; 
+    delete data.account; 
+    
+    try {
+        const response = await fetch("/api/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
 
-    const users = JSON.parse(localStorage.getItem("registeredUsers")) || [];
-    if (users.some(u => u.email === email)) {
-        alert("❌ Email already registered!");
-        return;
+        const result = await response.json();
+        alert(result.message);
+        
+        if (result.success) {
+            registerModal.style.display = "none";
+        }
+
+    } catch (error) {
+        console.error("Registration error:", error);
+        alert("An error occurred during registration. Please try again.");
     }
-
-    const newUser = { name, email, account, password, balance: 50000 };
-    users.push(newUser);
-    localStorage.setItem("registeredUsers", JSON.stringify(users));
-
-    alert("✅ Registration successful! Please login.");
-    registerModal.style.display = "none";
 });
-
 // ---------------------- PROFILE PAGE ----------------------
+// ---------------------- PROFILE PAGE (CORRECTED) ----------------------
 function loadProfileFromLocalStorage() {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) {
@@ -166,7 +167,10 @@ function loadProfileFromLocalStorage() {
 
     document.getElementById("userName").textContent = user.name || "User";
     document.getElementById("userEmail").textContent = user.email || "N/A";
-    document.getElementById("userAccount").textContent = user.account || "---";
+    // This is the line that needs to be fixed.
+    document.getElementById("userAccount").textContent = user.account_number || "---"; 
+    document.getElementById("userEmail").textContent = user.email;
+    // And this line too.
     document.getElementById("userBalance").textContent = parseFloat(user.balance).toFixed(2) || "0";
 }
 
@@ -194,19 +198,10 @@ function updateLoginUI() {
     }
 }
 
-// ---------------------- INITIALIZE ----------------------
-document.addEventListener("DOMContentLoaded", () => {
-    updateLoginUI();
-    if (window.location.pathname.endsWith('profile.html')) {
-        loadProfileFromLocalStorage();
-    }
-    logoutBtn?.addEventListener("click", logout);
-});
 // ---------------------- DUMMY ACCOUNT HISTORY ----------------------
 const historyBtn = document.getElementById("historyBtn");
 const historySection = document.getElementById("historySection");
 
-// Sample transactions
 const dummyTransactions = [
     { date: "2025-09-20 10:00 AM", type: "Deposit", amount: 5000, details: "Initial Deposit" },
     { date: "2025-09-21 02:30 PM", type: "Withdrawal", amount: 1000, details: "ATM Withdrawal" },
@@ -215,9 +210,8 @@ const dummyTransactions = [
     { date: "2025-09-23 03:15 PM", type: "Payment", amount: 500, details: "Shopping Payment" }
 ];
 
-// Show dummy transactions
 function loadDummyHistory() {
-    let html = "<table border='1' cellpadding='5'><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr>";
+    let html = "<table><tr><th>Date</th><th>Type</th><th>Amount</th><th>Details</th></tr>";
     dummyTransactions.forEach(tx => {
         html += `<tr>
                     <td>${tx.date}</td>
@@ -230,9 +224,8 @@ function loadDummyHistory() {
     historySection.innerHTML = html;
 }
 
-// Toggle history display
 historyBtn?.addEventListener("click", () => {
-    if (historySection.style.display === "none") {
+    if (historySection.style.display === "none" || historySection.style.display === "") {
         historySection.style.display = "block";
         loadDummyHistory();
     } else {
@@ -240,3 +233,11 @@ historyBtn?.addEventListener("click", () => {
     }
 });
 
+// ---------------------- INITIALIZE ----------------------
+document.addEventListener("DOMContentLoaded", () => {
+    updateLoginUI();
+    if (window.location.pathname.endsWith('profile.html')) {
+        loadProfileFromLocalStorage();
+    }
+    logoutBtn?.addEventListener("click", logout);
+});

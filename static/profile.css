@@ -78,3 +78,43 @@ body {
     font-size: 24px;
   }
 }
+/* Account History Button */
+.history-btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 15px;
+  font-size: 16px;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.history-btn:hover {
+  background-color: #45a049;
+  transform: scale(1.05);
+}
+
+/* Account History Table */
+.history-section {
+  margin-top: 20px;
+  display: none;
+  overflow-x: auto;
+}
+
+.history-section table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Arial, sans-serif;
+}
+
+.history-section th, .history-section td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.history-section th {
+  background-color: #f2f2f2;
+}
