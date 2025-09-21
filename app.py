@@ -17,7 +17,7 @@ app.secret_key = "replace-with-a-random-secret-key"
 
 # --- Load spaCy NLU model ---
 try:
-    nlp = spacy.load(MODEL_PATH)
+    nlp = spacy.load("models/nlu_model")
     print("Loaded NLU model from", MODEL_PATH)
 except OSError:
     nlp = None
