@@ -1,0 +1,232 @@
+/* admin.css - Styles for the Admin Login and Dashboard */
+
+/* --- 1. General Reset & Fonts (Matching style.css) --- */
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f4f7f9; /* Light, clean background */
+    color: #333;
+    min-height: 100vh;
+}
+
+/* --- 2. Navbar (Matching style.css) --- */
+.navbar {
+    background: #004080; /* Primary brand blue */
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar .logo {
+    font-size: 1.5em;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.navbar nav button {
+    margin-left: 10px;
+    background: #ffd700; /* Gold accent color */
+    color: #333;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.navbar nav button:hover {
+    background: #ffc400;
+}
+
+/* --- 3. Main Container & Dashboard Layout --- */
+.admin-container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+/* Base style for all content blocks */
+.admin-section {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    padding: 25px;
+    margin-bottom: 25px; /* Spacing between the three main sections */
+}
+
+.admin-section h3 {
+    color: #004080;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+    font-weight: 600;
+}
+
+.admin-section h4 {
+    color: #333;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+
+/* --- 4. Login Section Styling (Initially Displayed) --- */
+#adminLoginSection {
+    max-width: 400px;
+    margin: 100px auto; /* Center login form vertically and horizontally */
+    text-align: center;
+}
+
+#adminLoginSection h3 {
+    border-bottom: none;
+    font-size: 1.8em;
+}
+
+#adminLoginForm input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+#adminLoginForm button {
+    width: 100%;
+    background: #004080;
+    color: white;
+    padding: 12px;
+    margin-top: 15px;
+    font-size: 1.1em;
+}
+
+#adminLoginForm button:hover {
+    background: #002d5a;
+}
+
+/* --- 5. Model Training Section --- */
+.retrain-btn {
+    background: #ffd700; /* Gold accent for the main action */
+    color: #333;
+    padding: 10px 20px;
+    font-size: 1em;
+    margin-right: 0; /* Remove inline margin */
+}
+
+.retrain-btn:hover {
+    background: #ffc400;
+}
+
+/* --- 6. NLU Data Management Section --- */
+.add-query-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.add-query-form input {
+    flex: 1;
+    padding: 10px;
+    margin: 0; /* Override default input margin */
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.add-query-form button {
+    flex-shrink: 0;
+    background: #004080;
+    color: white;
+}
+
+/* --- 7. Table Styling (Chat History & NLU Data) --- */
+.admin-table-container {
+    overflow-x: auto; /* Allow horizontal scrolling on small screens */
+    margin-top: 15px;
+    border: 1px solid #eee;
+    border-radius: 6px;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.9em;
+}
+
+.admin-table thead tr {
+    background-color: #e0f0ff; /* Light blue header */
+    color: #004080;
+}
+
+.admin-table tbody tr:hover {
+    background-color: #f7f7f7;
+}
+
+.admin-table td button {
+    background: #e57373; /* Red/Danger for Delete */
+    color: white;
+    padding: 6px 12px;
+    font-weight: normal;
+}
+
+.admin-table td button:hover {
+    background: #d32f2f;
+}
+
+/* Style for the refresh button in Chat History */
+#refreshHistoryBtn {
+    background: #004080;
+    color: white;
+    padding: 8px 15px;
+    margin-bottom: 15px;
+}
+#refreshHistoryBtn:hover {
+    background: #002d5a;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 700px) {
+    .navbar {
+        flex-direction: column;
+    }
+    .navbar nav {
+        margin-top: 10px;
+    }
+    .admin-container {
+        margin: 20px;
+        padding: 10px;
+    }
+    .admin-section {
+        padding: 15px;
+    }
+    .add-query-form {
+        flex-direction: column;
+        gap: 0;
+    }
+    .add-query-form input {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    .add-query-form button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
