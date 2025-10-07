@@ -1,3 +1,5 @@
+// script.js - Full script with all modifications
+
 // ---------------------- MODAL CONTROLS ----------------------
 const loginModal = document.getElementById("loginModal");
 const registerModal = document.getElementById("registerModal");
@@ -63,6 +65,7 @@ userInput?.addEventListener("keypress", e => {
         sendBtn.click();
     }
 });
+
 //Chatbot logic
 async function handleChatMessage(message) {
     try {
@@ -89,8 +92,8 @@ async function handleChatMessage(message) {
         addMessage("Bot", "⚠️ Server error. Please try again later.");
     }
 }
+
 // ---------------------- LOGIN FORM ----------------------
-// ---------------------- LOGIN FORM (UPDATED) ----------------------
 const loginForm = document.getElementById("loginForm");
 loginForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -124,8 +127,8 @@ loginForm?.addEventListener("submit", async (e) => {
         alert("⚠️ An error occurred. Please try again.");
     }
 });
+
 // ---------------------- REGISTER FORM ----------------------
-// ---------------------- REGISTER FORM (CORRECTED) ----------------------
 const registerForm = document.getElementById("registerForm");
 registerForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -155,8 +158,8 @@ registerForm?.addEventListener("submit", async (e) => {
         alert("An error occurred during registration. Please try again.");
     }
 });
+
 // ---------------------- PROFILE PAGE ----------------------
-// ---------------------- PROFILE PAGE (CORRECTED) ----------------------
 function loadProfileFromLocalStorage() {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) {
@@ -167,10 +170,7 @@ function loadProfileFromLocalStorage() {
 
     document.getElementById("userName").textContent = user.name || "User";
     document.getElementById("userEmail").textContent = user.email || "N/A";
-    // This is the line that needs to be fixed.
     document.getElementById("userAccount").textContent = user.account_number || "---"; 
-    document.getElementById("userEmail").textContent = user.email;
-    // And this line too.
     document.getElementById("userBalance").textContent = parseFloat(user.balance).toFixed(2) || "0";
 }
 
@@ -218,7 +218,7 @@ function loadDummyHistory() {
                     <td>${tx.type}</td>
                     <td>₹${tx.amount.toFixed(2)}</td>
                     <td>${tx.details}</td>
-                 </tr>`;
+                   </tr>`;
     });
     html += "</table>";
     historySection.innerHTML = html;
@@ -233,6 +233,220 @@ historyBtn?.addEventListener("click", () => {
     }
 });
 
+// ---------------------- ADMIN PANEL CONTROLS ----------------------
+const adminLoginForm = document.getElementById("adminLoginForm");
+const adminLogoutBtn = document.getElementById("adminLogoutBtn");
+const adminLoginSection = document.getElementById("adminLoginSection");
+const adminDashboard = document.getElementById("adminDashboard");
+const nluDataTableBody = document.querySelector("#nluDataTable tbody");
+const chatHistoryTableBody = document.querySelector("#chatHistoryTable tbody");
+const addNLUForm = document.getElementById("addNLUForm");
+const retrainBtn = document.getElementById("retrainBtn");
+const retrainStatus = document.getElementById("retrainStatus");
+const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
+
+// --- Admin Helper Functions ---
+function saveAdminState(isLoggedIn) {
+    localStorage.setItem('isAdminLoggedIn', isLoggedIn ? 'true' : 'false');
+    updateAdminUI();
+}
+
+function isAdminLoggedIn() {
+    return localStorage.getItem('isAdminLoggedIn') === 'true';
+}
+
+// script.js
+
+function updateAdminUI() {
+    if (adminLoginSection && adminDashboard) {
+        if (isAdminLoggedIn()) {
+            adminLoginSection.style.display = 'none';
+            adminDashboard.style.display = 'block'; // <-- This makes it visible
+            loadAdminData();
+            // ... (listener code here) ...
+        } else {
+            adminLoginSection.style.display = 'block';
+            adminDashboard.style.display = 'none'; // <-- This hides it if not logged in
+        }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // ...
+    if (window.location.pathname.endsWith('admin.html')) {
+        updateAdminUI(); // <-- This runs the function on page load
+    }
+});
+// --- Admin Login ---
+adminLoginForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(adminLoginForm);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+        const response = await fetch("/api/admin/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert("✅ Admin Login successful!");
+            saveAdminState(true);
+        } else {
+            alert(`❌ Admin Login failed: ${result.message}`);
+        }
+    } catch (error) {
+        alert("⚠️ An error occurred during admin login.");
+    }
+});
+
+// --- Admin Logout ---
+adminLogoutBtn?.addEventListener("click", () => {
+    saveAdminState(false);
+    alert("✅ Admin logged out.");
+});
+
+// --- 1. Load Chat History (MODIFIED) ---
+// --- 1. Load Chat History (MODIFIED) ---
+async function loadChatHistory() {
+    if (!chatHistoryTableBody) return;
+    
+    try {
+        const response = await fetch("/api/admin/history");
+        if (response.status === 403) return alert("Session expired. Please log in.");
+        
+        const data = await response.json();
+        chatHistoryTableBody.innerHTML = ''; // Clear existing
+        
+        data.history.forEach(item => {
+            const tr = document.createElement("tr");
+            
+            const confidencePercent = (item.confidence * 100).toFixed(1) + '%';
+            
+            tr.innerHTML = `
+                <td>${item.query}</td>
+                <td><span style="font-weight: bold; color: #004080;">${item.intent}</span></td>
+                <td>${confidencePercent}</td>
+                <td>${item.date}</td> 
+            `;
+            chatHistoryTableBody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error("Error loading chat history:", error);
+    }
+}
+
+//refreshHistoryBtn?.addEventListener("click", loadChatHistory);
+
+// --- 2. Load NLU Data (MODIFIED) ---
+async function loadNLUData() {
+    if (!nluDataTableBody) return;
+    
+    try {
+        const response = await fetch("/api/admin/nlu");
+        if (response.status === 403) return alert("Session expired. Please log in.");
+        
+        const data = await response.json();
+        nluDataTableBody.innerHTML = ''; // Clear existing
+        
+        data.data.forEach(row => {
+            const tr = document.createElement("tr");
+            
+            // MODIFIED: Display Query, Bot Reply, Intent, Action (Delete)
+            tr.innerHTML = `
+                <td>${row.text}</td>
+                <td>${row.bot_reply || 'N/A'}</td> <td>${row.intent}</td>
+                <td><button class="delete-btn" data-id="${row.id}">Delete</button></td>
+            `;
+            nluDataTableBody.appendChild(tr);
+        });
+        
+        // Add delete handler after rows are added
+        nluDataTableBody.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', deleteNLUQuery);
+        });
+    } catch (error) {
+        console.error("Error loading NLU data:", error);
+    }
+}
+
+// --- 2. Add New NLU Query (MODIFIED) ---
+addNLUForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(addNLUForm);
+    const data = Object.fromEntries(formData.entries());
+
+    // Data now includes: text (Query), bot_reply, intent
+    
+    try {
+        const response = await fetch("/api/admin/nlu", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        alert(result.message);
+        if (result.success) {
+            addNLUForm.reset();
+            loadNLUData(); // Refresh the table
+        }
+    } catch (error) {
+        alert("⚠️ An error occurred while adding query.");
+    }
+});
+
+// --- 2. Delete NLU Query ---
+async function deleteNLUQuery(e) {
+    const dataId = e.target.dataset.id;
+    if (!confirm(`Are you sure you want to delete query ID ${dataId}? Retraining is required after deletion.`)) return;
+
+    try {
+        const response = await fetch(`/api/admin/nlu/${dataId}`, {
+            method: "DELETE"
+        });
+
+        const result = await response.json();
+        alert(result.message);
+        if (result.success) {
+            loadNLUData(); // Refresh the table
+        }
+    } catch (error) {
+        alert("⚠️ An error occurred while deleting query.");
+    }
+}
+
+// --- 3. Retrain Bot ---
+retrainBtn?.addEventListener("click", async () => {
+    retrainBtn.disabled = true;
+    retrainStatus.textContent = "⏳ Training model... this may take a moment.";
+    
+    try {
+        const response = await fetch("/api/admin/retrain", { method: "POST" });
+        const result = await response.json();
+
+        if (result.success) {
+            retrainStatus.textContent = `✅ ${result.message}`;
+        } else {
+            retrainStatus.textContent = `❌ ${result.message}`;
+        }
+    } catch (error) {
+        retrainStatus.textContent = "❌ Retraining failed due to a server error.";
+        console.error("Retrain error:", error);
+    } finally {
+        retrainBtn.disabled = false;
+    }
+});
+
+
+// --- Initial Load for Admin Page ---
+function loadAdminData() {
+    loadChatHistory();
+    loadNLUData();
+}
+
 // ---------------------- INITIALIZE ----------------------
 document.addEventListener("DOMContentLoaded", () => {
     updateLoginUI();
@@ -240,4 +454,12 @@ document.addEventListener("DOMContentLoaded", () => {
         loadProfileFromLocalStorage();
     }
     logoutBtn?.addEventListener("click", logout);
+    
+    // Check if on Admin page and update UI
+    if (window.location.pathname.endsWith('admin.html')) {
+        updateAdminUI();
+        
+        // CRUCIAL FIX: Attach the listener here to ensure the element is ready.
+        refreshHistoryBtn?.addEventListener("click", loadChatHistory);
+    }
 });

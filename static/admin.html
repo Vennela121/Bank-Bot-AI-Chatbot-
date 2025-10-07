@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Bank Bot</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">⚙️ Admin Panel</div>
+        <nav>
+            <button onclick="location.href='index.html'">Home</button>
+            <button id="adminLogoutBtn">Logout</button>
+        </nav>
+    </header>
+    
+    <div class="admin-container">
+    
+    <div id="adminLoginSection" class="admin-section">
+        <h3>Admin Login</h3>
+        <form id="adminLoginForm">
+            <input type="text" name="username" placeholder="Username (admin)" required>
+            <input type="password" name="password" placeholder="Password (admin)" required>
+            <button type="submit">Admin Login</button>
+        </form>
+    </div>
+    
+    <div id="adminDashboard" style="display: none;">
+
+        <div class="admin-section">
+            <h3>    Chat History (Logins-Chat History)</h3>
+            <button id="refreshHistoryBtn">Refresh History</button>
+            <div class="admin-table-container">
+                <table id="chatHistoryTable" class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Query</th>
+                            <th>Intent</th>
+                            <th>Confidence</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <h3>NLU Training Data Management (Queries & Intents)</h3>
+            
+            <h4>Add New Query</h4>
+            <form id="addNLUForm" class="add-query-form">
+                <input type="text" name="text" placeholder="User Query (e.g., 'I want a home loan')" required>
+                <input type="text" name="bot_reply" placeholder="Bot Reply (e.g., 'We offer loans...')" required>
+                <input type="text" name="intent" placeholder="Intent (e.g., 'apply_loan')" required>
+                <button type="submit">Add Query</button>
+            </form>
+
+            <h4 style="margin-top: 20px;">Existing Training Data</h4>
+            <div class="admin-table-container">
+                <table id="nluDataTable" class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Query</th>
+                            <th>Bot Reply</th>
+                            <th>Intent</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="admin-section">
+            <h3>Model Training & Deployment</h3>
+            <button id="retrainBtn" class="retrain-btn">🤖 Re-train BankBot</button>
+            <p id="retrainStatus" style="margin-top: 10px; font-weight: bold;"></p>
+        </div>
+
+    </div>
+    
+</div>
+    <script src="script.js"></script>
+</body>
+</html>
